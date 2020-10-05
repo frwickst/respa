@@ -342,6 +342,34 @@ class OrderLogEntry(models.Model):
         )
 
 
+class ReservationCustomPrice(models.Model):
+    HALF = 'half'
+    FREE = 'free'
+    CUSTOM = 'custom'
+
+    PRICE_TYPE_CHOICES = (
+        (HALF, _('half')),
+        (FREE, _('free')),
+        (CUSTOM, _('custom')),
+    )
+
+    reservation = models.OneToOneField(
+        Reservation, verbose_name=_('custom price'), related_name='custom_price', on_delete=models.CASCADE
+    )
+    price = models.DecimalField(
+        verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    price_type = models.CharField(max_length=32, verbose_name=_('price type'), choices=PRICE_TYPE_CHOICES)
+
+    class Meta:
+        verbose_name = _('custom price')
+        verbose_name_plural = _('custom prices')
+
+    def __str__(self):
+        return '{} ({})'.format(self.price, self.reservation)
+
+
 class LocalizedSerializerField(serializers.Field):
     def __init__(self, *args, **kwargs):
         kwargs['read_only'] = True
