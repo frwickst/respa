@@ -152,10 +152,24 @@ class Product(models.Model):
         else:
             raise NotImplementedError('Cannot calculate price, unknown price type "{}".'.format(self.price_type))
 
+    @rounded
+    def get_pretax_custom_price_for_reservation(self, reservation: Reservation) -> Decimal:
+        return convert_aftertax_to_pretax(self.get_custom_price_for_reservation(reservation), self.tax_percentage)
+
+    @rounded
+    def get_custom_price_for_reservation(self, reservation: Reservation) -> Decimal:
+        return reservation.custom_price.price
+
     def get_pretax_price_for_reservation(self, reservation: Reservation, rounded: bool = True) -> Decimal:
+        if hasattr(reservation, 'custom_price'):
+            return self.get_pretax_custom_price_for_reservation(reservation, rounded=rounded)
+
         return self.get_pretax_price_for_time_range(reservation.begin, reservation.end, rounded=rounded)
 
     def get_price_for_reservation(self, reservation: Reservation, rounded: bool = True) -> Decimal:
+        if hasattr(reservation, 'custom_price'):
+            return self.get_custom_price_for_reservation(reservation, rounded=rounded)
+
         return self.get_price_for_time_range(reservation.begin, reservation.end, rounded=rounded)
 
 
@@ -356,10 +370,7 @@ class ReservationCustomPrice(models.Model):
     reservation = models.OneToOneField(
         Reservation, verbose_name=_('custom price'), related_name='custom_price', on_delete=models.CASCADE
     )
-    price = models.DecimalField(
-        verbose_name=_('price including VAT'), max_digits=10, decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))]
-    )
+    price = models.DecimalField(verbose_name=_('price including VAT'), max_digits=10, decimal_places=2)
     price_type = models.CharField(max_length=32, verbose_name=_('price type'), choices=PRICE_TYPE_CHOICES)
 
     class Meta:

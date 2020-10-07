@@ -148,8 +148,8 @@ class PaymentsReservationSerializer(ReservationSerializer):
         user = prefetched_user or self.context['request'].user
 
         if custom_price_data:
-            #if not reservation.can_add_product_order(user):
-            #    raise PermissionDenied()
+            if not reservation.can_set_custom_price(user):
+                raise PermissionDenied()
             if hasattr(reservation, 'custom_price'):
                 reservation.custom_price.delete()
             custom_price_data['reservation'] = reservation

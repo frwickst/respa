@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, create_autospec, patch
 from urllib.parse import urlencode
+from decimal import Decimal
 
 import pytest
 from guardian.shortcuts import assign_perm
@@ -363,8 +364,8 @@ def test_unit_admin_and_unit_manager_may_bypass_payment(user_api_client, resourc
 def test_update_custom_price(general_admin, api_client, reservation, resource_in_unit):
     reservation_data = build_reservation_data(resource_in_unit)
     detail_url = get_detail_url(reservation)
-    print(detail_url)
-    print(reservation.id)
+    print(vars(general_admin))
+
     reservation_data['custom_price'] = {
         'price': 555.10,
         'price_type': ReservationCustomPrice.CUSTOM
@@ -374,6 +375,6 @@ def test_update_custom_price(general_admin, api_client, reservation, resource_in
     response = api_client.put(detail_url, data=reservation_data)
     assert response.status_code == 200, "Request failed with: %s" % (str(response.content, 'utf8'))
     reservation.refresh_from_db()
-    assert reservation.custom_price == reservation_data['custom_price']['price']
-    assert reservation.price_type == reservation_data['custom_price']['price_type']
-
+    two_places = Decimal(10) ** -2
+    assert reservation.custom_price.price == Decimal(reservation_data['custom_price']['price']).quantize(two_places)
+    assert reservation.custom_price.price_type == reservation_data['custom_price']['price_type']
